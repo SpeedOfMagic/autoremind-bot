@@ -10,7 +10,6 @@ Then bot will autoremind you all the time, until you decide to stop it.
 
 ## TODO
 * Docker
-* Deploy it on cloud
 * Tests
 * GitHub Actions
 * Docs

@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
+from reminder_dao import Reminder, ReminderDao
 from telegram_api import TelegramAdapter
 from logging_utils import get_logger, Logger
 
@@ -9,21 +10,25 @@ class WorkerState(Enum):
     EXECUTE_COMMAND = 0
     NEW_NAME = 1
     NEW_TIME = 2
-    DELETE_NAME = 3
+    NEW_PERIOD = 3
+    DELETE_ID = 4
 
 
 class Worker:
     state: WorkerState
     chat_id: int
     telegram_api: TelegramAdapter
+    reminder_dao: ReminderDao
     logger: Logger
 
     name: str
+    launch_ts: int
 
-    def __init__(self, chat_id, telegram_api):
+    def __init__(self, chat_id, telegram_api, reminder_dao):
         self.state = WorkerState.EXECUTE_COMMAND
         self.chat_id = chat_id
         self.telegram_api = telegram_api
+        self.reminder_dao = reminder_dao
         self.logger = get_logger(f'worker_{chat_id}')
 
     def process_message(self, message):
@@ -44,8 +49,10 @@ class Worker:
             return self.process_new_name(message)
         elif self.state == WorkerState.NEW_TIME:
             return self.process_new_time(message)
-        elif self.state == WorkerState.DELETE_NAME:
-            return self.process_delete_name(message)
+        elif self.state == WorkerState.NEW_PERIOD:
+            return self.process_new_period(message)
+        elif self.state == WorkerState.DELETE_ID:
+            return self.process_delete_id(message)
         else:
             return 'Sorry, I did not parse the command'
 
@@ -65,25 +72,30 @@ class Worker:
         return 'Enter time for a first reminder (YYYY-MM-DD HH:MM)'
 
     def process_new_time(self, message):
+        self.state = WorkerState.NEW_PERIOD
+        time = datetime.fromisoformat(message['text'].strip())  # FIXME avoid type error
+        self.launch_ts = int(time.timestamp())
+        self.logger.debug(f'Parsed time as {time}; Unix timestamp is {self.launch_ts}')
+        return 'Enter period for your reminder (amount of seconds)'
+
+    def process_new_period(self, message):
         self.state = WorkerState.EXECUTE_COMMAND
-        time = datetime.fromisoformat(message['text'].strip())
-        unix_timestamp = int(time.timestamp())
-        self.logger.debug(f'Parsed time as {time}; Unix timestamp is {unix_timestamp}')
-
-        resp = self.telegram_api.send_scheduled_message(self.chat_id, self.name, unix_timestamp)
-        self.logger.info(f'Got response while sending scheduled message: {resp.json()}')
-
-        return 'Ok, reminder added'
+        period_ts = int(message['text'].strip())  # FIXME avoid type error
+        reminder = Reminder(self.chat_id, self.launch_ts, period_ts, self.name)
+        self.reminder_dao.insert_reminder(reminder)
+        self.logger.info(f'Created new reminder #{reminder.reminder_id} "{reminder.name}" '
+                         f'with launch time {reminder.launch_ts} and period {reminder.period_ts}')
+        return f'Done, created new reminder #{reminder.reminder_id} "{reminder.name}"'
 
     def process_list(self, message):
         self.state = WorkerState.EXECUTE_COMMAND
         return 'Here are your reminders:'
 
-    def process_delete(self, message):
-        self.state = WorkerState.DELETE_NAME
-        return 'Enter name for a reminder to delete:'
+    def process_delete(self, _):
+        self.state = WorkerState.DELETE_ID
+        return 'Enter id for a reminder to delete:'
 
-    def process_delete_name(self, message):
+    def process_delete_id(self, message):
         self.state = WorkerState.EXECUTE_COMMAND
         return 'Reminder not found))'
 

@@ -72,15 +72,25 @@ class Worker:
         return 'Enter time for a first reminder (YYYY-MM-DD HH:MM:SS)'
 
     def process_new_time(self, message):
+        try:
+            time = datetime.fromisoformat(message['text'].strip())
+        except ValueError:
+            self.logger.warn(f'Received wrong input for datetime: {message["text"].strip()}')
+            return 'Sorry, I did not parse time for a first reminder, please try again'
+
         self.state = WorkerState.NEW_PERIOD
-        time = datetime.fromisoformat(message['text'].strip())  # FIXME avoid type error
         self.launch_ts = int(time.timestamp())
         self.logger.debug(f'Parsed time as {time}; Unix timestamp is {self.launch_ts}')
         return 'Enter period for your reminder (amount of seconds)'
 
     def process_new_period(self, message):
+        try:
+            period_ts = int(message['text'].strip())
+        except ValueError:
+            self.logger.warn(f'Received wrong input for period_ts: {message["text"].strip()}')
+            return 'Sorry, I could not parse period time. Please try again.'
         self.state = WorkerState.EXECUTE_COMMAND
-        period_ts = int(message['text'].strip())  # FIXME avoid type error
+
         reminder = Reminder(self.chat_id, self.launch_ts, period_ts, self.name)
         self.reminder_dao.insert_reminder(reminder)
         self.logger.info(f'Created new reminder #{reminder.reminder_id} "{reminder.name}" '
@@ -99,8 +109,12 @@ class Worker:
         return 'Enter id for a reminder to delete:'
 
     def process_delete_id(self, message):
+        try:
+            reminder_id = int(message['text'].strip())
+        except ValueError:
+            self.logger.warn(f'Received wrong input for reminder_id: {message["text"].strip()}')
+            return 'Sorry, I could not parse ID to delete. Please try again.'
         self.state = WorkerState.EXECUTE_COMMAND
-        reminder_id = int(message['text'].strip())  # FIXME avoid type error
 
         reminder = self.reminder_dao.lookup_reminder(reminder_id, self.chat_id)
         if reminder is None:

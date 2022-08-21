@@ -10,11 +10,12 @@ Then bot will autoremind you all the time, until you decide to stop it.
 
 ## TODO
 * Docker
+* Allow user to enter timezone they want (or figure it out from them)
 * Tests
 * GitHub Actions
 * Docs
 * Multiple languages (EN, RU)
 * Make it possible to autoremind N times.
 * Normal ID generation
-* Not multiline message for /delete command
+* Single-line message for /delete command
 * Syntax parser that lets you type in command (long-term)

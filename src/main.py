@@ -1,5 +1,4 @@
 import argparse
-import logging
 
 from telegram_api import TelegramAdapter
 from chat_bot import ChatBot

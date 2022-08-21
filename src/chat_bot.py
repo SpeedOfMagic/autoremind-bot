@@ -55,8 +55,8 @@ class ChatBot:
         try:
             self.logger.info('autoremind-bot started')
             while True:
-                self.process_pending_message()
                 self.process_reminders()
+                self.process_pending_message()
         except KeyboardInterrupt:
             self.logger.info('autoremind-bot stopped')
         except Exception:

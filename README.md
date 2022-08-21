@@ -9,8 +9,9 @@ This bot approaches it clever way, and allows you to set periods to your reminde
 Then bot will autoremind you all the time, until you decide to stop it. 
 
 ## TODO
-* Functionality for delete, list
+* Solve various cases where user enters wrong input
 * Docker
+* Deploy it on cloud
 * Tests
 * GitHub Actions
 * Docs

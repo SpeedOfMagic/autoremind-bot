@@ -69,7 +69,7 @@ class Worker:
     def process_new_name(self, message):
         self.state = WorkerState.NEW_TIME
         self.name = message['text'].strip()
-        return 'Enter time for a first reminder (YYYY-MM-DD HH:MM)'
+        return 'Enter time for a first reminder (YYYY-MM-DD HH:MM:SS)'
 
     def process_new_time(self, message):
         self.state = WorkerState.NEW_PERIOD
@@ -87,9 +87,12 @@ class Worker:
                          f'with launch time {reminder.launch_ts} and period {reminder.period_ts}')
         return f'Done, created new reminder #{reminder.reminder_id} "{reminder.name}"'
 
-    def process_list(self, message):
+    def process_list(self, _):
         self.state = WorkerState.EXECUTE_COMMAND
-        return 'Here are your reminders:'
+        response = 'Here are your reminders:'
+        for reminder in self.reminder_dao.get_reminders(chat_id=self.chat_id):
+            response += '\n' + str(reminder)
+        return response
 
     def process_delete(self, _):
         self.state = WorkerState.DELETE_ID
@@ -97,7 +100,14 @@ class Worker:
 
     def process_delete_id(self, message):
         self.state = WorkerState.EXECUTE_COMMAND
-        return 'Reminder not found))'
+        reminder_id = int(message['text'].strip())  # FIXME avoid type error
+
+        reminder = self.reminder_dao.lookup_reminder(reminder_id, self.chat_id)
+        if reminder is None:
+            return f'Reminder with id {reminder_id} not found'
+        else:
+            self.reminder_dao.delete_reminder(reminder_id)
+            return f'Deleted reminder {reminder}'
 
     def process_help(self, _):
         self.state = WorkerState.EXECUTE_COMMAND

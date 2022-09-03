@@ -24,12 +24,12 @@ class ChatBot:
 
     def process_pending_message(self):
         result = self.telegram_api.get_updates(self.offset)
+        self.logger.info(f'Received message {result}')
         if len(result['result']) == 0:
             return
 
         result = result['result'][0]
         message = result['message']
-        self.logger.info(f'Received message {message}')
         chat_id = message['chat']['id']
         if chat_id not in self.workers:
             self.workers[chat_id] = Worker(chat_id, self.telegram_api, self.reminder_dao)
@@ -39,7 +39,7 @@ class ChatBot:
         self.offset = int(result['update_id']) + 1
 
     def process_reminders(self):
-        cur_time = int(time.time())
+        cur_time = int(time.time()) + 3 * 3600  # FIXME Dirty hack to convert to Moscow time
         reminders = self.reminder_dao.get_reminders()
         for reminder in reminders:
             if reminder.launch_ts <= cur_time:

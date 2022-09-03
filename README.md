@@ -9,7 +9,6 @@ This bot approaches it clever way, and allows you to set periods to your reminde
 Then bot will autoremind you all the time, until you decide to stop it. 
 
 ## TODO
-* Docker
 * Allow user to enter timezone they want (or figure it out from them)
 * Tests
 * GitHub Actions
